@@ -1,6 +1,6 @@
 # 🧩 Product Requirement Document (PRD)
 
-**프로젝트명:** Chatify MVP (v1.2)
+**프로젝트명:** Cokaotalk MVP (v1.2)
 **작성일:** 2025-10-19
 **작성자:** 승현
 **최종 수정:** 2025-10-19
@@ -77,7 +77,7 @@
 ## 5. 정보 구조 (Information Architecture, IA)
 
 ```
-Chatify MVP
+Cokaotalk MVP
 │
 ├── 로그인 페이지 (/login)
 │   ├── 이메일 입력
