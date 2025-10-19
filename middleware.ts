@@ -1,75 +1,26 @@
-import { NextResponse, type NextRequest } from "next/server";
-import { createServerClient } from "@supabase/ssr";
-import type { Database } from "@/lib/supabase/types";
-import { env } from "@/constants/env";
-import {
-  LOGIN_PATH,
-  isAuthEntryPath,
-  shouldProtectPath,
-} from "@/constants/auth";
-import { match } from "ts-pattern";
+import { NextResponse, type NextRequest } from 'next/server';
 
-const copyCookies = (from: NextResponse, to: NextResponse) => {
-  from.cookies.getAll().forEach((cookie) => {
-    to.cookies.set({
-      name: cookie.name,
-      value: cookie.value,
-      path: cookie.path,
-      expires: cookie.expires,
-      httpOnly: cookie.httpOnly,
-      maxAge: cookie.maxAge,
-      sameSite: cookie.sameSite,
-      secure: cookie.secure,
-    });
-  });
+export function middleware(request: NextRequest) {
+  const token = request.cookies.get('auth_token')?.value;
+  const { pathname } = request.nextUrl;
 
-  return to;
-};
+  // 로그인/회원가입 페이지에 이미 로그인된 상태로 접근 시
+  if (token && (pathname === '/login' || pathname === '/register')) {
+    return NextResponse.redirect(new URL('/', request.url));
+  }
 
-export async function middleware(request: NextRequest) {
-  const response = NextResponse.next({ request });
+  // 보호된 페이지에 비로그인 상태로 접근 시
+  const protectedPaths = ['/', '/room', '/mypage'];
+  const isProtectedPath = protectedPaths.some((path) => pathname.startsWith(path));
 
-  const supabase = createServerClient<Database>(
-    env.NEXT_PUBLIC_SUPABASE_URL,
-    env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            request.cookies.set({ name, value, ...options });
-            response.cookies.set({ name, value, ...options });
-          });
-        },
-      },
-    }
-  );
+  if (!token && isProtectedPath) {
+    const redirectUrl = encodeURIComponent(pathname);
+    return NextResponse.redirect(new URL(`/login?redirect=${redirectUrl}`, request.url));
+  }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const decision = match({ user, pathname: request.nextUrl.pathname })
-    .when(
-      ({ user: currentUser, pathname }) =>
-        !currentUser && shouldProtectPath(pathname),
-      ({ pathname }) => {
-        const loginUrl = request.nextUrl.clone();
-        loginUrl.pathname = LOGIN_PATH;
-        loginUrl.searchParams.set("redirectedFrom", pathname);
-
-        return copyCookies(response, NextResponse.redirect(loginUrl));
-      }
-    )
-    .otherwise(() => response);
-
-  return decision;
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
-  ],
+  matcher: ['/', '/login', '/register', '/room/:path*', '/mypage'],
 };

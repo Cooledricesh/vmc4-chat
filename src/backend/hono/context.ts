@@ -8,6 +8,7 @@ export type AppConfig = {
     url: string;
     serviceRoleKey: string;
   };
+  jwtSecret: string;
 };
 
 export type AppVariables = {
