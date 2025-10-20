@@ -16,7 +16,8 @@ export const createHonoApp = () => {
     return singletonApp;
   }
 
-  const app = new Hono<AppEnv>();
+  // Next.js [[...hono]] catch-all route와 통합하기 위해 basePath 설정
+  const app = new Hono<AppEnv>().basePath('/api');
 
   app.use('*', errorBoundary());
   app.use('*', withAppContext());

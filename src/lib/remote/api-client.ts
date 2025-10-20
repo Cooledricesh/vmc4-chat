@@ -1,10 +1,14 @@
 import axios, { isAxiosError } from "axios";
 
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL ?? "",
+  // baseURL이 설정되지 않았을 때는 상대 경로로 요청
+  // 개발 환경에서는 비워두면 현재 origin 기준으로 요청됨
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || "",
   headers: {
     "Content-Type": "application/json",
   },
+  // 쿠키를 포함하여 요청 (인증용)
+  withCredentials: true,
 });
 
 type ErrorPayload = {
