@@ -167,6 +167,7 @@ export function ChatRoomProvider({ roomId, children }: ChatRoomProviderProps) {
         messageId: string;
         isLiked: boolean;
         totalLikes: number;
+        userId: string;
       }
     }) => {
       dispatch({

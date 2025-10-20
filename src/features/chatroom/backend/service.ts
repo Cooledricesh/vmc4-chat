@@ -147,7 +147,7 @@ export async function getMessagesService(
           content,
           user_id,
           is_deleted,
-          user:users!messages_user_id_fkey(nickname)
+          users!messages_user_id_fkey(nickname)
         `)
         .in('id', parentMessageIds);
 
@@ -156,13 +156,14 @@ export async function getMessagesService(
         if (msg.parentMessageId) {
           const parentMsg = parentMessages?.find((p: any) => p.id === msg.parentMessageId);
           if (parentMsg) {
+            const userInfo = Array.isArray(parentMsg.users) ? parentMsg.users[0] : parentMsg.users;
             msg.parentMessage = {
               id: parentMsg.id,
               content: parentMsg.content,
               userId: parentMsg.user_id,
               isDeleted: parentMsg.is_deleted,
-              user: parentMsg.user ? {
-                nickname: parentMsg.user.nickname,
+              user: userInfo ? {
+                nickname: userInfo.nickname,
               } : undefined,
             };
           }
@@ -264,19 +265,20 @@ export async function sendMessageService(
         content,
         user_id,
         is_deleted,
-        user:users!messages_user_id_fkey(nickname)
+        users!messages_user_id_fkey(nickname)
       `)
       .eq('id', message.parent_message_id)
       .single();
 
     if (parentMsg) {
+      const userInfo = Array.isArray(parentMsg.users) ? parentMsg.users[0] : parentMsg.users;
       parentMessage = {
         id: parentMsg.id,
         content: parentMsg.content,
         userId: parentMsg.user_id,
         isDeleted: parentMsg.is_deleted,
-        user: parentMsg.user ? {
-          nickname: parentMsg.user.nickname,
+        user: userInfo ? {
+          nickname: userInfo.nickname,
         } : undefined,
       };
     }

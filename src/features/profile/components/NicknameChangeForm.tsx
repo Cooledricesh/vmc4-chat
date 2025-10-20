@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 
 export function NicknameChangeForm() {
-  const { user } = useAuthStore();
+  const user = useAuthStore((state) => state.user);
   const { mutate: changeNickname, isPending } = useChangeNickname();
   const { toast } = useToast();
 
@@ -54,7 +54,7 @@ export function NicknameChangeForm() {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div>
         <Label className="text-sm text-gray-600">현재 닉네임</Label>
-        <p className="text-base font-medium">{user?.nickname}</p>
+        <p className="text-base font-medium mt-1">{user?.nickname || '닉네임 없음'}</p>
       </div>
       <div>
         <Label htmlFor="nickname">새 닉네임</Label>

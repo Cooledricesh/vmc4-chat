@@ -5,6 +5,63 @@ import type { AppEnv } from '@/backend/hono/context';
 import type { NicknameChangeInput, PasswordChangeInput } from './schema';
 import { PROFILE_ERRORS } from './error';
 
+export async function getCurrentUserService(c: Context<AppEnv>) {
+  try {
+    const supabase = c.get('supabase');
+    const userId = (c as any).get('userId') as string | undefined;
+
+    console.log('[getCurrentUserService] userId:', userId);
+
+    if (!userId) {
+      console.log('[getCurrentUserService] No userId found');
+      return {
+        success: false as const,
+        error: PROFILE_ERRORS.UNAUTHORIZED,
+      };
+    }
+
+    // 사용자 정보 조회
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, email, nickname')
+      .eq('id', userId)
+      .single();
+
+    console.log('[getCurrentUserService] Supabase response:', { user, error });
+
+    if (error || !user) {
+      console.log('[getCurrentUserService] User not found or error:', error);
+      return {
+        success: false as const,
+        error: PROFILE_ERRORS.USER_NOT_FOUND,
+      };
+    }
+
+    console.log('[getCurrentUserService] Success, returning user:', user);
+
+    return {
+      success: true as const,
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          nickname: user.nickname,
+        },
+      },
+    };
+  } catch (err) {
+    console.error('[getCurrentUserService] Unexpected error:', err);
+    return {
+      success: false as const,
+      error: {
+        status: 500,
+        code: 'INTERNAL_ERROR',
+        message: err instanceof Error ? err.message : 'Internal server error',
+      },
+    };
+  }
+}
+
 export async function changeNicknameService(c: Context<AppEnv>, input: NicknameChangeInput) {
   const supabase = c.get('supabase');
   const userId = (c as any).get('userId') as string | undefined;

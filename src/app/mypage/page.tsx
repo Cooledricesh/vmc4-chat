@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/features/auth/stores/auth-store';
+import { useCurrentUser } from '@/features/profile/hooks/use-current-user';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -12,11 +13,46 @@ import { ArrowLeft } from 'lucide-react';
 
 export default function MyPage() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
 
-  if (!user) {
-    return null;
+  // 서버에서 최신 사용자 정보 가져오기
+  const { data: serverUser, isLoading, error } = useCurrentUser();
+
+  console.log('MyPage - isAuthenticated:', isAuthenticated);
+  console.log('MyPage - store user:', user);
+  console.log('MyPage - server user:', serverUser);
+  console.log('MyPage - isLoading:', isLoading);
+
+  // 로딩 중
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p>로딩 중...</p>
+      </div>
+    );
   }
+
+  // 에러 발생
+  if (error) {
+    console.error('Failed to fetch user:', error);
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p>사용자 정보를 불러오는데 실패했습니다.</p>
+      </div>
+    );
+  }
+
+  // 서버 데이터가 없는 경우
+  if (!serverUser) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p>사용자 정보를 찾을 수 없습니다.</p>
+      </div>
+    );
+  }
+
+  // 서버 데이터만 사용
+  const displayUser = serverUser;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -38,11 +74,11 @@ export default function MyPage() {
           <CardContent className="space-y-4">
             <div>
               <p className="text-sm text-gray-600">이메일</p>
-              <p className="text-base font-medium">{user.email}</p>
+              <p className="text-base font-medium">{displayUser.email}</p>
             </div>
             <div>
               <p className="text-sm text-gray-600">닉네임</p>
-              <p className="text-base font-medium">{user.nickname}</p>
+              <p className="text-base font-medium">{displayUser.nickname}</p>
             </div>
           </CardContent>
         </Card>
