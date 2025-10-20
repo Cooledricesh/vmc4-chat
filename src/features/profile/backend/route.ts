@@ -1,22 +1,24 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
-import { loginSchema, registerSchema } from './schema';
-import { loginService, registerService } from './service';
+import { nicknameChangeSchema, passwordChangeSchema } from './schema';
+import { changeNicknameService, changePasswordService } from './service';
 import { success, failure, respond } from '@/backend/http/response';
+import { withAuth } from '@/backend/middleware/with-auth';
 import type { AppEnv } from '@/backend/hono/context';
 
-export function registerAuthRoutes(app: Hono<AppEnv>) {
-  const auth = new Hono<AppEnv>();
+export function registerProfileRoutes(app: Hono<AppEnv>) {
+  const users = new Hono<AppEnv>();
 
-  auth.post('/login', zValidator('json', loginSchema), async (c) => {
+  // 닉네임 변경
+  users.patch('/me/nickname', withAuth, zValidator('json', nicknameChangeSchema), async (c) => {
     const body = c.req.valid('json');
-    const result = await loginService(c, body);
+    const result = await changeNicknameService(c, body);
 
     if (!result.success) {
       return respond(c, failure(result.error.status, result.error.code, result.error.message));
     }
 
-    // JWT 토큰을 HTTP-only 쿠키로 설정
+    // JWT 토큰을 HTTP-only 쿠키로 재설정
     const cookieOptions = [
       'HttpOnly',
       'Secure',
@@ -30,23 +32,17 @@ export function registerAuthRoutes(app: Hono<AppEnv>) {
     return respond(c, success({ user: result.data.user }));
   });
 
-  auth.post('/register', zValidator('json', registerSchema), async (c) => {
+  // 비밀번호 변경
+  users.patch('/me/password', withAuth, zValidator('json', passwordChangeSchema), async (c) => {
     const body = c.req.valid('json');
-    const result = await registerService(c, body);
+    const result = await changePasswordService(c, body);
 
     if (!result.success) {
       return respond(c, failure(result.error.status, result.error.code, result.error.message));
     }
 
-    return respond(c, success({ userId: result.data.userId }, 201));
+    return respond(c, success({ message: result.data.message }));
   });
 
-  auth.post('/logout', async (c) => {
-    // 쿠키 삭제
-    c.header('Set-Cookie', 'auth_token=; HttpOnly; Secure; SameSite=Strict; Max-Age=0; Path=/');
-
-    return respond(c, success({ message: '로그아웃되었습니다' }));
-  });
-
-  app.route('/auth', auth);
+  app.route('/users', users);
 }

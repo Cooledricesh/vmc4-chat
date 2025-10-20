@@ -19,4 +19,14 @@ export const AUTH_ERRORS = {
     message: '세션이 만료되었습니다',
     status: 401,
   },
+  EMAIL_ALREADY_EXISTS: {
+    code: 'EMAIL_ALREADY_EXISTS',
+    message: '이미 사용 중인 이메일입니다',
+    status: 409,
+  },
+  REGISTRATION_FAILED: {
+    code: 'REGISTRATION_FAILED',
+    message: '회원가입에 실패했습니다',
+    status: 500,
+  },
 } as const;
