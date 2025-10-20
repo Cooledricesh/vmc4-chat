@@ -1,4 +1,4 @@
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import type { Context } from 'hono';
 import type { AppEnv } from '@/backend/hono/context';

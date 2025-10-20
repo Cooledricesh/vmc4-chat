@@ -8,9 +8,18 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
-        hostname: '**',
+        protocol: 'https',
+        hostname: 'picsum.photos',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
       },
     ],
+  },
+  outputFileTracingRoot: undefined,
+  outputFileTracingIncludes: {
+    '/api/**/*': ['./node_modules/**/*.wasm', './node_modules/**/*.node'],
   },
 };
 
