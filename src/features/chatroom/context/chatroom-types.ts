@@ -109,7 +109,7 @@ export type ChatAction =
   | { type: ChatActionType.ADD_OPTIMISTIC_MESSAGE; payload: { tempId: string; message: Message } }
   | { type: ChatActionType.CONFIRM_OPTIMISTIC_MESSAGE; payload: { tempId: string; message: Message } }
   | { type: ChatActionType.REVERT_OPTIMISTIC_MESSAGE; payload: string }
-  | { type: ChatActionType.UPDATE_REACTION; payload: { messageId: string; isLiked: boolean; totalLikes: number } }
+  | { type: ChatActionType.UPDATE_REACTION; payload: { messageId: string; isLiked: boolean; totalLikes: number; userId: string } }
   | { type: ChatActionType.SET_INPUT_VALUE; payload: string }
   | { type: ChatActionType.SET_REPLY_TARGET; payload: Message | null }
   | { type: ChatActionType.CLEAR_REPLY_TARGET }

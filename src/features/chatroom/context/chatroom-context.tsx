@@ -354,6 +354,11 @@ export function ChatRoomProvider({ roomId, children }: ChatRoomProviderProps) {
     },
 
     toggleReaction: async (messageId: string) => {
+      if (!user?.id) {
+        console.error('User ID is required to toggle reaction');
+        return;
+      }
+
       try {
         const response = await apiClient.post(`/api/chatroom/${roomId}/messages/${messageId}/reactions`, {
           type: 'like',
@@ -363,6 +368,7 @@ export function ChatRoomProvider({ roomId, children }: ChatRoomProviderProps) {
           messageId,
           isLiked: response.data.isLiked,
           totalLikes: response.data.totalLikes,
+          userId: user.id,
         };
 
         dispatch({

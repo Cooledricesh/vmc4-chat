@@ -190,8 +190,35 @@ export function chatRoomReducer(state: ChatRoomState, action: ChatAction): ChatR
           ...state.messages,
           items: state.messages.items.map((msg) => {
             if (msg.id === action.payload.messageId) {
-              // reactions 배열 업데이트 로직은 서버에서 받아온 totalLikes로 대체
-              return { ...msg };
+              // reactions 배열 업데이트
+              const { userId, isLiked } = action.payload;
+              let updatedReactions = [...msg.reactions];
+
+              if (isLiked) {
+                // 좋아요 추가
+                const alreadyLiked = updatedReactions.some(
+                  (r) => r.userId === userId && r.type === 'like'
+                );
+                if (!alreadyLiked) {
+                  updatedReactions.push({
+                    id: `temp-${Date.now()}`,
+                    messageId: msg.id,
+                    userId,
+                    type: 'like',
+                    createdAt: new Date().toISOString(),
+                  });
+                }
+              } else {
+                // 좋아요 제거
+                updatedReactions = updatedReactions.filter(
+                  (r) => !(r.userId === userId && r.type === 'like')
+                );
+              }
+
+              return {
+                ...msg,
+                reactions: updatedReactions,
+              };
             }
             return msg;
           }),
