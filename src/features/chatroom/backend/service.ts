@@ -100,7 +100,7 @@ export async function getMessagesService(
       created_at,
       updated_at,
       user:users!messages_user_id_fkey(id, nickname, email),
-      parent_message:messages!messages_parent_message_id_fkey(
+      parent_message:messages!parent_message_id(
         id,
         content,
         user_id,
@@ -120,6 +120,10 @@ export async function getMessagesService(
     .range(offset, offset + limit - 1);
 
   if (error) {
+    console.error('[getMessagesService] Supabase query error:');
+    console.error('  Room ID:', roomId);
+    console.error('  Error:', error);
+    console.error('  Error details:', JSON.stringify(error, null, 2));
     return {
       success: false,
       error: CHATROOM_ERRORS.MESSAGES_FETCH_FAILED,
@@ -238,7 +242,7 @@ export async function sendMessageService(
       created_at,
       updated_at,
       user:users!messages_user_id_fkey(id, nickname, email),
-      parent_message:messages!messages_parent_message_id_fkey(
+      parent_message:messages!parent_message_id(
         id,
         content,
         user_id,

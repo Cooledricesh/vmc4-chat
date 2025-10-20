@@ -9,6 +9,7 @@ import { chatRoomReducer, initialChatRoomState } from './chatroom-reducer';
 import type { ChatRoomState } from './chatroom-types';
 import { ChatActionType } from './chatroom-types';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import { useAuthStore } from '@/features/auth/stores/auth-store';
 
 // Context Value Type
 interface ChatRoomContextValue {
@@ -58,12 +59,21 @@ interface ChatRoomProviderProps {
 export function ChatRoomProvider({ roomId, children }: ChatRoomProviderProps) {
   const [state, dispatch] = useReducer(chatRoomReducer, initialChatRoomState);
   const router = useRouter();
+  const { isAuthenticated, user } = useAuthStore();
 
   // Refs
   const messageListRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const supabaseRef = useRef(createClient());
+
+  // 인증 상태 확인
+  useEffect(() => {
+    console.log('[ChatRoom] Authentication status:', { isAuthenticated, user });
+    if (!isAuthenticated || !user) {
+      console.warn('[ChatRoom] User is not authenticated, but middleware should have redirected');
+    }
+  }, [isAuthenticated, user]);
 
   // Load room info and messages on mount
   useEffect(() => {
@@ -100,6 +110,13 @@ export function ChatRoomProvider({ roomId, children }: ChatRoomProviderProps) {
       } catch (error) {
         const errorMessage = extractApiErrorMessage(error);
         console.error('Failed to load room data:', errorMessage);
+        console.error('Full error object:', error);
+
+        // Check if it's an axios error with response
+        if ((error as any)?.response) {
+          console.error('Error response status:', (error as any).response.status);
+          console.error('Error response data:', (error as any).response.data);
+        }
 
         // If room not found, redirect to main page
         if (errorMessage.includes('찾을 수 없습니다')) {
@@ -113,6 +130,8 @@ export function ChatRoomProvider({ roomId, children }: ChatRoomProviderProps) {
 
   // WebSocket connection for real-time updates
   useEffect(() => {
+    console.log('[ChatRoom] Setting up Realtime connection for room:', roomId);
+
     const supabase = supabaseRef.current;
 
     // Create channel for this room
@@ -123,6 +142,8 @@ export function ChatRoomProvider({ roomId, children }: ChatRoomProviderProps) {
         },
       },
     });
+
+    console.log('[ChatRoom] Created channel:', channel);
 
     // Listen for new messages
     channel.on('broadcast', { event: 'new_message' }, (payload: { payload: Message }) => {
@@ -185,17 +206,24 @@ export function ChatRoomProvider({ roomId, children }: ChatRoomProviderProps) {
         //   },
         // });
       } else if (status === 'CHANNEL_ERROR') {
-        console.error('Channel error');
+        console.error('[ChatRoom] Channel error occurred');
+        console.error('[ChatRoom] This usually means:');
+        console.error('  1. Supabase Realtime is not enabled for your project');
+        console.error('  2. Your Supabase URL or ANON key is incorrect');
+        console.error('  3. Network connectivity issues');
+        console.error('[ChatRoom] Please check your Supabase project settings');
         dispatch({
           type: ChatActionType.SET_CONNECTION_STATUS,
           payload: 'error',
         });
       } else if (status === 'TIMED_OUT') {
-        console.error('Channel timed out');
+        console.error('[ChatRoom] Channel connection timed out');
         dispatch({
           type: ChatActionType.SET_CONNECTION_STATUS,
           payload: 'disconnected',
         });
+      } else {
+        console.log('[ChatRoom] Channel status changed to:', status);
       }
     });
 
@@ -265,6 +293,14 @@ export function ChatRoomProvider({ roomId, children }: ChatRoomProviderProps) {
 
         const errorMessage = extractApiErrorMessage(error);
         console.error('Failed to send message:', errorMessage);
+        console.error('Full error object:', error);
+
+        // Check if it's an axios error with response
+        if ((error as any)?.response) {
+          console.error('Error response status:', (error as any).response.status);
+          console.error('Error response data:', (error as any).response.data);
+        }
+
         alert(errorMessage);
       }
     },
