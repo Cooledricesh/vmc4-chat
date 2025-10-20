@@ -17,9 +17,13 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  outputFileTracingRoot: undefined,
-  outputFileTracingIncludes: {
-    '/api/**/*': ['./node_modules/**/*.wasm', './node_modules/**/*.node'],
+  outputFileTracingExcludes: {
+    '*': [
+      'node_modules/@next/swc-*/**/*',
+      'node_modules/lightningcss-*/**/*',
+      'node_modules/@tailwindcss/oxide-*/**/*',
+      'node_modules/@unrs/resolver-binding-*/**/*',
+    ],
   },
 };
 
