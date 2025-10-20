@@ -8,53 +8,77 @@ import { AUTH_ERRORS } from './error';
 export async function loginService(c: Context<AppEnv>, input: LoginInput) {
   const supabase = c.get('supabase');
   const config = c.get('config');
+  const logger = c.get('logger');
 
-  // 사용자 조회
-  const { data: user, error } = await supabase
-    .from('users')
-    .select('id, email, nickname, password_hash')
-    .eq('email', input.email)
-    .single();
+  logger?.info?.('[loginService] Login attempt for:', input.email);
 
-  if (error || !user) {
-    return {
-      success: false as const,
-      error: AUTH_ERRORS.INVALID_CREDENTIALS,
-    };
-  }
+  try {
+    // 사용자 조회
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, email, nickname, password_hash')
+      .eq('email', input.email)
+      .single();
 
-  // 비밀번호 검증
-  const isValid = await bcrypt.compare(input.password, user.password_hash);
+    if (error) {
+      logger?.error?.('[loginService] Database error:', error);
+      return {
+        success: false as const,
+        error: AUTH_ERRORS.INVALID_CREDENTIALS,
+      };
+    }
 
-  if (!isValid) {
-    return {
-      success: false as const,
-      error: AUTH_ERRORS.INVALID_CREDENTIALS,
-    };
-  }
+    if (!user) {
+      logger?.warn?.('[loginService] User not found:', input.email);
+      return {
+        success: false as const,
+        error: AUTH_ERRORS.INVALID_CREDENTIALS,
+      };
+    }
 
-  // JWT 토큰 생성
-  const token = jwt.sign(
-    {
-      userId: user.id,
-      email: user.email,
-      nickname: user.nickname,
-    },
-    config.jwtSecret,
-    { expiresIn: '24h' }
-  );
+    logger?.info?.('[loginService] User found, verifying password');
 
-  return {
-    success: true as const,
-    data: {
-      user: {
-        id: user.id,
+    // 비밀번호 검증
+    const isValid = await bcrypt.compare(input.password, user.password_hash);
+
+    if (!isValid) {
+      logger?.warn?.('[loginService] Invalid password for:', input.email);
+      return {
+        success: false as const,
+        error: AUTH_ERRORS.INVALID_CREDENTIALS,
+      };
+    }
+
+    logger?.info?.('[loginService] Password valid, generating token');
+
+    // JWT 토큰 생성
+    const token = jwt.sign(
+      {
+        userId: user.id,
         email: user.email,
         nickname: user.nickname,
       },
-      token,
-    },
-  };
+      config.jwtSecret,
+      { expiresIn: '24h' }
+    );
+
+    logger?.info?.('[loginService] Login successful for:', input.email);
+
+    return {
+      success: true as const,
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          nickname: user.nickname,
+        },
+        token,
+      },
+    };
+  } catch (err) {
+    logger?.error?.('[loginService] Unexpected error:', err);
+    throw err; // errorBoundary에서 처리
+  }
 }
 
 export async function registerService(c: Context<AppEnv>, input: RegisterInput) {
