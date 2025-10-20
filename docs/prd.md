@@ -177,7 +177,7 @@ Cokaotalk MVP
 ## 8. 기술 요구사항 (Technical Requirements)
 
 ### 🎯 핵심 기술 스택
-- **Frontend**: Next.js 15, React 19, TypeScript
+- **Frontend**: Next.js 15.5.6, React 19.2.0, TypeScript
 - **Styling**: Tailwind CSS, shadcn/ui
 - **Backend**: Hono, Supabase
 - **Real-time**: WebSocket (Supabase Realtime)

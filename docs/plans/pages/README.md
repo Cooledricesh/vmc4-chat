@@ -83,7 +83,7 @@
 ## 📊 기술 스택 요약
 
 ### Frontend
-- **Framework:** Next.js 15 (App Router)
+- **Framework:** Next.js 15.5.6 (App Router)
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS + shadcn/ui
 - **State Management:**
@@ -152,8 +152,8 @@
 ### 공통
 ```json
 {
-  "next": "15.x",
-  "react": "19.x",
+  "next": "15.5.6",
+  "react": "19.2.0",
   "typescript": "^5.x",
   "@tanstack/react-query": "^5.x",
   "zustand": "^4.x",
@@ -259,7 +259,7 @@ npx shadcn@latest add input button label card dialog badge toast
 - [ ] 상태 관리 아키텍처 이해
 
 ### 환경 설정
-- [ ] Next.js 15 프로젝트 초기화
+- [ ] Next.js 15.5.6 프로젝트 초기화
 - [ ] TypeScript 설정
 - [ ] ESLint + Prettier 설정
 - [ ] Supabase 프로젝트 생성
@@ -281,13 +281,13 @@ npx shadcn@latest add input button label card dialog badge toast
 
 ## 🎓 학습 자료
 
-### Next.js 15
+### Next.js 15.5.6
 - App Router 구조
 - Server Components vs Client Components
-- Middleware
+- Middleware (Turbopack 완전 지원)
 - API Routes with Hono
 
-### React 19
+### React 19.2.0
 - use hook
 - Server Actions (필요 시)
 

@@ -10,9 +10,8 @@
 - 모든 기능을 완전히 구현할 때까지 중단하지 않고 연속적으로 진행한다.
 - TypeScript type 오류, ESLint 오류, 빌드 오류가 없음을 보장한다.
 - 절대 하드코딩된 값을 사용하지 않는다. 모든 값은 상수, 환경변수, 또는 설정 파일에서 관리한다.
-- **Authentication Guard Pattern (Turbopack)**: Protected pages MUST be Server Components using `loadCurrentUser()` with `redirect()`. Separate client logic into `*Client.tsx` components.
+- **Authentication Guard Pattern**: Protected pages MUST be Server Components using `loadCurrentUser()` with `redirect()`. Separate client logic into `*Client.tsx` components. Middleware is supported but server component pattern is more explicit.
 - **Single Authentication Source**: Use `loadCurrentUser()` (server) and `useCurrentUserContext()` (client). Never use multiple auth state managers (e.g., Zustand authStore).
-- **Middleware Limitation**: Next.js middleware does NOT work reliably with `--turbopack`. Always use server-side auth checks in page components instead.
 - **작업의 성격에 따라 적절한 커스텀 에이전트를 활용한다**:
   - `usecase-writer`: 특정 기능에 대한 usecase 문서를 새로 작성해야 할 때
   - `plan-writer`: usecase에 대한 구체적인 계획 문서를 새로 작성해야 할 때
@@ -184,7 +183,10 @@ use following libraries for specific functionalities:
 
 ## Next.js
 
+- **Version**: Next.js 15.5.6 (with Turbopack middleware support)
+- **React Version**: 19.2.0
 - you must use promise for page.tsx params props.
+- Turbopack (`--turbopack`) is stable for development with full middleware support.
 
 ## Shadcn-ui
 
