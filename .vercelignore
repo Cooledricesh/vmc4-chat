@@ -40,8 +40,8 @@ docs
 README.md
 *.md
 
-# Supabase
-supabase
+# Supabase migrations (루트의 supabase 폴더만)
+/supabase
 
 # TypeScript
 *.tsbuildinfo
