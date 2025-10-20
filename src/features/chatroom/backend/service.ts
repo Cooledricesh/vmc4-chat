@@ -86,34 +86,13 @@ export async function getMessagesService(
     .select('*', { count: 'exact', head: true })
     .eq('room_id', roomId);
 
-  // 메시지 조회
+  // 메시지 조회 (user 정보 포함)
   const { data: messages, error } = await supabase
     .from('messages')
     .select(`
-      id,
-      room_id,
-      user_id,
-      content,
-      type,
-      parent_message_id,
-      is_deleted,
-      created_at,
-      updated_at,
+      *,
       user:users!messages_user_id_fkey(id, nickname, email),
-      parent_message:messages!parent_message_id(
-        id,
-        content,
-        user_id,
-        is_deleted,
-        user:users!messages_user_id_fkey(nickname)
-      ),
-      reactions:message_reactions(
-        id,
-        message_id,
-        user_id,
-        reaction_type,
-        created_at
-      )
+      reactions:message_reactions(*)
     `)
     .eq('room_id', roomId)
     .order('created_at', { ascending: false })
@@ -142,15 +121,6 @@ export async function getMessagesService(
     content: msg.content,
     type: msg.type,
     parentMessageId: msg.parent_message_id,
-    parentMessage: msg.parent_message ? {
-      id: msg.parent_message.id,
-      content: msg.parent_message.content,
-      userId: msg.parent_message.user_id,
-      isDeleted: msg.parent_message.is_deleted,
-      user: msg.parent_message.user ? {
-        nickname: msg.parent_message.user.nickname,
-      } : undefined,
-    } : undefined,
     isDeleted: msg.is_deleted,
     reactions: (msg.reactions || []).map((r: any) => ({
       id: r.id,
@@ -162,6 +132,44 @@ export async function getMessagesService(
     createdAt: msg.created_at,
     updatedAt: msg.updated_at,
   }));
+
+  // parent_message 정보를 별도로 조회하여 연결
+  if (formattedMessages.length > 0) {
+    const parentMessageIds = formattedMessages
+      .map(m => m.parentMessageId)
+      .filter((id): id is string => id !== null && id !== undefined);
+
+    if (parentMessageIds.length > 0) {
+      const { data: parentMessages } = await supabase
+        .from('messages')
+        .select(`
+          id,
+          content,
+          user_id,
+          is_deleted,
+          user:users!messages_user_id_fkey(nickname)
+        `)
+        .in('id', parentMessageIds);
+
+      // parent_message 정보를 formattedMessages에 추가
+      formattedMessages.forEach((msg: any) => {
+        if (msg.parentMessageId) {
+          const parentMsg = parentMessages?.find((p: any) => p.id === msg.parentMessageId);
+          if (parentMsg) {
+            msg.parentMessage = {
+              id: parentMsg.id,
+              content: parentMsg.content,
+              userId: parentMsg.user_id,
+              isDeleted: parentMsg.is_deleted,
+              user: parentMsg.user ? {
+                nickname: parentMsg.user.nickname,
+              } : undefined,
+            };
+          }
+        }
+      });
+    }
+  }
 
   return {
     success: true,
@@ -221,7 +229,7 @@ export async function sendMessageService(
       });
   }
 
-  // 메시지 저장
+  // 메시지 저장 (user 정보 포함)
   const { data: message, error } = await supabase
     .from('messages')
     .insert({
@@ -232,23 +240,8 @@ export async function sendMessageService(
       parent_message_id: input.parentMessageId || null,
     })
     .select(`
-      id,
-      room_id,
-      user_id,
-      content,
-      type,
-      parent_message_id,
-      is_deleted,
-      created_at,
-      updated_at,
-      user:users!messages_user_id_fkey(id, nickname, email),
-      parent_message:messages!parent_message_id(
-        id,
-        content,
-        user_id,
-        is_deleted,
-        user:users!messages_user_id_fkey(nickname)
-      )
+      *,
+      user:users!messages_user_id_fkey(id, nickname, email)
     `)
     .single();
 
@@ -260,7 +253,34 @@ export async function sendMessageService(
   }
 
   const user = Array.isArray(message.user) ? message.user[0] : message.user;
-  const parentMessage = Array.isArray(message.parent_message) ? message.parent_message[0] : message.parent_message;
+
+  // parent_message 정보 조회 (필요한 경우)
+  let parentMessage: any = undefined;
+  if (message.parent_message_id) {
+    const { data: parentMsg } = await supabase
+      .from('messages')
+      .select(`
+        id,
+        content,
+        user_id,
+        is_deleted,
+        user:users!messages_user_id_fkey(nickname)
+      `)
+      .eq('id', message.parent_message_id)
+      .single();
+
+    if (parentMsg) {
+      parentMessage = {
+        id: parentMsg.id,
+        content: parentMsg.content,
+        userId: parentMsg.user_id,
+        isDeleted: parentMsg.is_deleted,
+        user: parentMsg.user ? {
+          nickname: parentMsg.user.nickname,
+        } : undefined,
+      };
+    }
+  }
 
   return {
     success: true,
@@ -277,21 +297,7 @@ export async function sendMessageService(
         content: message.content,
         type: message.type,
         parentMessageId: message.parent_message_id,
-        parentMessage: parentMessage ? {
-          id: parentMessage.id,
-          content: parentMessage.content,
-          userId: parentMessage.user_id,
-          isDeleted: parentMessage.is_deleted,
-          user: (() => {
-            const pUser = parentMessage.user;
-            if (Array.isArray(pUser) && pUser.length > 0) {
-              return { nickname: pUser[0].nickname };
-            } else if (pUser && !Array.isArray(pUser) && 'nickname' in pUser) {
-              return { nickname: (pUser as any).nickname };
-            }
-            return undefined;
-          })(),
-        } : undefined,
+        parentMessage,
         isDeleted: message.is_deleted,
         reactions: [],
         createdAt: message.created_at,

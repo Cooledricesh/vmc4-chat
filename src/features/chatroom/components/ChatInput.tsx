@@ -1,12 +1,27 @@
 "use client";
 
-import React, { useEffect } from 'react';
-import { Send, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Send, X, Smile } from 'lucide-react';
 import { useChatRoom } from '../context/chatroom-context';
 import { cn } from '@/lib/utils';
 
+// 자주 사용하는 이모지 목록
+const COMMON_EMOJIS = [
+  '😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊',
+  '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘',
+  '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪',
+  '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒',
+  '😞', '😔', '😟', '😕', '🙁', '😣', '😖', '😫',
+  '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬',
+  '👍', '👎', '👏', '🙌', '👐', '🤝', '🙏', '✌️',
+  '🤞', '🤟', '🤘', '👌', '👈', '👉', '👆', '👇',
+  '❤️', '💕', '💖', '💗', '💓', '💞', '💝', '💘',
+  '🔥', '✨', '💯', '⭐', '🌟', '💫', '🎉', '🎊',
+];
+
 export function ChatInput() {
   const { state, actions, refs } = useChatRoom();
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Enter 키로 전송 (Shift+Enter는 줄바꿈)
@@ -31,10 +46,29 @@ export function ChatInput() {
     actions.sendMessage(content);
   };
 
+  const handleEmojiSelect = (emoji: string) => {
+    actions.updateInput(state.input.value + emoji);
+    setShowEmojiPicker(false);
+    refs.inputRef.current?.focus();
+  };
+
   // Auto-focus input on mount
   useEffect(() => {
     refs.inputRef.current?.focus();
   }, [refs.inputRef]);
+
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (showEmojiPicker && !target.closest('.emoji-picker-container')) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showEmojiPicker]);
 
   return (
     <div className="border-t border-gray-200 bg-white p-4">
@@ -61,7 +95,7 @@ export function ChatInput() {
 
       {/* Input Area */}
       <div className="flex items-end gap-2">
-        <div className="flex-1">
+        <div className="relative flex-1">
           <textarea
             ref={refs.inputRef}
             value={state.input.value}
@@ -70,7 +104,7 @@ export function ChatInput() {
             onCompositionStart={handleCompositionStart}
             onCompositionEnd={handleCompositionEnd}
             placeholder="메시지를 입력하세요..."
-            className="max-h-32 min-h-[44px] w-full resize-none rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            className="max-h-32 min-h-[44px] w-full resize-none rounded-lg border border-gray-300 px-4 py-3 pr-12 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             rows={1}
             style={{
               height: 'auto',
@@ -81,6 +115,37 @@ export function ChatInput() {
               target.style.height = `${target.scrollHeight}px`;
             }}
           />
+
+          {/* Emoji Button */}
+          <div className="emoji-picker-container absolute bottom-2 right-2">
+            <button
+              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+              className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+              title="이모지 선택"
+              type="button"
+            >
+              <Smile className="h-5 w-5" />
+            </button>
+
+            {/* Emoji Picker Dropdown */}
+            {showEmojiPicker && (
+              <div className="absolute bottom-full right-0 mb-2 w-80 rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
+                <div className="mb-2 text-sm font-medium text-gray-700">이모지 선택</div>
+                <div className="grid max-h-60 grid-cols-8 gap-1 overflow-y-auto">
+                  {COMMON_EMOJIS.map((emoji, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleEmojiSelect(emoji)}
+                      className="flex h-10 w-10 items-center justify-center rounded transition-colors hover:bg-gray-100"
+                      type="button"
+                    >
+                      <span className="text-xl">{emoji}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <button
