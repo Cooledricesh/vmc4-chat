@@ -91,7 +91,7 @@ export async function getMessagesService(
     .from('messages')
     .select(`
       *,
-      user:users!messages_user_id_fkey(id, nickname, email),
+      users(id, nickname, email),
       reactions:message_reactions(*)
     `)
     .eq('room_id', roomId)
@@ -109,29 +109,34 @@ export async function getMessagesService(
     };
   }
 
-  const formattedMessages = (messages || []).map((msg: any) => ({
-    id: msg.id,
-    roomId: msg.room_id,
-    userId: msg.user_id,
-    user: msg.user ? {
-      id: msg.user.id,
-      nickname: msg.user.nickname,
-      email: msg.user.email,
-    } : undefined,
-    content: msg.content,
-    type: msg.type,
-    parentMessageId: msg.parent_message_id,
-    isDeleted: msg.is_deleted,
-    reactions: (msg.reactions || []).map((r: any) => ({
-      id: r.id,
-      messageId: r.message_id,
-      userId: r.user_id,
-      type: r.reaction_type,
-      createdAt: r.created_at,
-    })),
-    createdAt: msg.created_at,
-    updatedAt: msg.updated_at,
-  }));
+  const formattedMessages = (messages || []).map((msg: any) => {
+    // users 정보가 배열로 올 수도 있고 객체로 올 수도 있음
+    const userInfo = Array.isArray(msg.users) ? msg.users[0] : msg.users;
+
+    return {
+      id: msg.id,
+      roomId: msg.room_id,
+      userId: msg.user_id,
+      user: userInfo ? {
+        id: userInfo.id,
+        nickname: userInfo.nickname,
+        email: userInfo.email,
+      } : undefined,
+      content: msg.content,
+      type: msg.type,
+      parentMessageId: msg.parent_message_id,
+      isDeleted: msg.is_deleted,
+      reactions: (msg.reactions || []).map((r: any) => ({
+        id: r.id,
+        messageId: r.message_id,
+        userId: r.user_id,
+        type: r.reaction_type,
+        createdAt: r.created_at,
+      })),
+      createdAt: msg.created_at,
+      updatedAt: msg.updated_at,
+    };
+  });
 
   // parent_message 정보를 별도로 조회하여 연결
   if (formattedMessages.length > 0) {
@@ -242,7 +247,7 @@ export async function sendMessageService(
     })
     .select(`
       *,
-      user:users!messages_user_id_fkey(id, nickname, email)
+      users(id, nickname, email)
     `)
     .single();
 
@@ -253,7 +258,7 @@ export async function sendMessageService(
     };
   }
 
-  const user = Array.isArray(message.user) ? message.user[0] : message.user;
+  const userInfo = Array.isArray(message.users) ? message.users[0] : message.users;
 
   // parent_message 정보 조회 (필요한 경우)
   let parentMessage: any = undefined;
@@ -291,10 +296,10 @@ export async function sendMessageService(
         id: message.id,
         roomId: message.room_id,
         userId: message.user_id,
-        user: user ? {
-          id: user.id,
-          nickname: user.nickname,
-          email: user.email,
+        user: userInfo ? {
+          id: userInfo.id,
+          nickname: userInfo.nickname,
+          email: userInfo.email,
         } : undefined,
         content: message.content,
         type: message.type,
@@ -479,7 +484,7 @@ export async function getParticipantsService(c: Context<AppEnv>, roomId: string)
       id,
       user_id,
       joined_at,
-      user:users!room_participants_user_id_fkey(id, nickname, email)
+      users(id, nickname, email)
     `)
     .eq('room_id', roomId)
     .order('joined_at', { ascending: true });
@@ -491,16 +496,23 @@ export async function getParticipantsService(c: Context<AppEnv>, roomId: string)
     };
   }
 
-  const formattedParticipants = (participants || []).map((p: any) => ({
-    id: p.id,
-    userId: p.user_id,
-    user: {
-      id: p.user.id,
-      nickname: p.user.nickname,
-      email: p.user.email,
-    },
-    joinedAt: p.joined_at,
-  }));
+  const formattedParticipants = (participants || []).map((p: any) => {
+    const userInfo = Array.isArray(p.users) ? p.users[0] : p.users;
+    return {
+      id: p.id,
+      userId: p.user_id,
+      user: userInfo ? {
+        id: userInfo.id,
+        nickname: userInfo.nickname,
+        email: userInfo.email,
+      } : {
+        id: p.user_id,
+        nickname: '알 수 없는 사용자',
+        email: '',
+      },
+      joinedAt: p.joined_at,
+    };
+  });
 
   return {
     success: true,

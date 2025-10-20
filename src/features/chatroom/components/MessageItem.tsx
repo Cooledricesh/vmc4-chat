@@ -41,7 +41,7 @@ export function MessageItem({
       {/* Author and Time */}
       <div className={cn('flex items-center gap-2 text-xs', isOwnMessage && 'flex-row-reverse')}>
         <span className="font-medium text-gray-700">
-          {message.user?.nickname || '알 수 없음'}
+          {message.user?.nickname || '알 수 없는 사용자'}
         </span>
         <span className="text-gray-400">
           {formatDistanceToNow(new Date(message.createdAt), { addSuffix: true, locale: ko })}
@@ -57,7 +57,7 @@ export function MessageItem({
           )}
         >
           <p className="text-xs font-medium text-gray-500">
-            {message.parentMessage.user?.nickname || '알 수 없음'}
+            {message.parentMessage.user?.nickname || '알 수 없는 사용자'}
           </p>
           <p className="text-gray-600">
             {message.parentMessage.isDeleted
