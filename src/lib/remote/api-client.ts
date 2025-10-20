@@ -7,8 +7,9 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  // 쿠키를 포함하여 요청 (인증용)
-  withCredentials: true,
+  // same-origin 요청이므로 withCredentials는 불필요 (자동으로 쿠키 포함됨)
+  // cross-origin 요청 시에만 true로 설정
+  withCredentials: !!process.env.NEXT_PUBLIC_API_BASE_URL,
 });
 
 type ErrorPayload = {

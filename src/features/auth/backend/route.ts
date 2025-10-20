@@ -21,7 +21,7 @@ export function registerAuthRoutes(app: Hono<AppEnv>) {
     const cookieOptions = [
       'HttpOnly',
       ...(isProduction ? ['Secure'] : []),
-      'SameSite=Strict',
+      'SameSite=Lax', // Strict에서 Lax로 변경하여 리다이렉션 시 쿠키 전송 허용
       'Max-Age=86400',
       'Path=/',
     ].join('; ');
@@ -32,13 +32,20 @@ export function registerAuthRoutes(app: Hono<AppEnv>) {
   });
 
   auth.post('/register', zValidator('json', registerSchema), async (c) => {
+    const logger = c.get('logger');
+    logger?.info?.('[POST /auth/register] Request received');
+
     const body = c.req.valid('json');
+    logger?.info?.('[POST /auth/register] Validated input:', { email: body.email, nickname: body.nickname });
+
     const result = await registerService(c, body);
 
     if (!result.success) {
+      logger?.warn?.('[POST /auth/register] Registration failed:', result.error);
       return respond(c, failure(result.error.status, result.error.code, result.error.message));
     }
 
+    logger?.info?.('[POST /auth/register] Registration successful:', result.data.userId);
     return respond(c, success({ userId: result.data.userId }, 201));
   });
 
@@ -48,7 +55,7 @@ export function registerAuthRoutes(app: Hono<AppEnv>) {
     const cookieOptions = [
       'HttpOnly',
       ...(isProduction ? ['Secure'] : []),
-      'SameSite=Strict',
+      'SameSite=Lax',
       'Max-Age=0',
       'Path=/',
     ].join('; ');

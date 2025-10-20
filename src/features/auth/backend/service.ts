@@ -59,15 +59,24 @@ export async function loginService(c: Context<AppEnv>, input: LoginInput) {
 
 export async function registerService(c: Context<AppEnv>, input: RegisterInput) {
   const supabase = c.get('supabase');
+  const logger = c.get('logger');
+
+  logger?.info?.('[registerService] Starting registration for:', input.email);
 
   // 이메일 중복 확인
-  const { data: existingUser } = await supabase
+  const { data: existingUser, error: checkError } = await supabase
     .from('users')
     .select('id')
     .eq('email', input.email)
     .single();
 
+  if (checkError && checkError.code !== 'PGRST116') {
+    // PGRST116은 "not found" 에러로, 정상적인 경우
+    logger?.error?.('[registerService] Error checking existing user:', checkError);
+  }
+
   if (existingUser) {
+    logger?.info?.('[registerService] Email already exists:', input.email);
     return {
       success: false as const,
       error: AUTH_ERRORS.EMAIL_ALREADY_EXISTS,
@@ -75,9 +84,11 @@ export async function registerService(c: Context<AppEnv>, input: RegisterInput) 
   }
 
   // 비밀번호 해싱
+  logger?.info?.('[registerService] Hashing password');
   const passwordHash = await bcrypt.hash(input.password, 10);
 
   // 사용자 생성
+  logger?.info?.('[registerService] Creating user');
   const { data: user, error } = await supabase
     .from('users')
     .insert({
@@ -88,13 +99,23 @@ export async function registerService(c: Context<AppEnv>, input: RegisterInput) 
     .select('id')
     .single();
 
-  if (error || !user) {
+  if (error) {
+    logger?.error?.('[registerService] Error creating user:', error);
     return {
       success: false as const,
       error: AUTH_ERRORS.REGISTRATION_FAILED,
     };
   }
 
+  if (!user) {
+    logger?.error?.('[registerService] User creation returned no data');
+    return {
+      success: false as const,
+      error: AUTH_ERRORS.REGISTRATION_FAILED,
+    };
+  }
+
+  logger?.info?.('[registerService] User created successfully:', user.id);
   return {
     success: true as const,
     data: {

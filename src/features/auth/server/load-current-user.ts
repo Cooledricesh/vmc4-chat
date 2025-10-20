@@ -1,27 +1,45 @@
 import "server-only";
 
-import type { User } from "@supabase/supabase-js";
-import { createSupabaseServerClient } from "@/lib/supabase/server-client";
+import { cookies } from "next/headers";
+import jwt from "jsonwebtoken";
 import type { CurrentUserSnapshot } from "../types";
 
-const mapUser = (user: User) => ({
-  id: user.id,
-  email: user.email,
-  appMetadata: user.app_metadata ?? {},
-  userMetadata: user.user_metadata ?? {},
-});
+type JWTPayload = {
+  userId: string;
+  email: string;
+  nickname: string;
+  iat: number;
+  exp: number;
+};
 
 export const loadCurrentUser = async (): Promise<CurrentUserSnapshot> => {
-  const supabase = await createSupabaseServerClient();
-  const result = await supabase.auth.getUser();
-  const user = result.data.user;
+  const cookieStore = await cookies();
+  const token = cookieStore.get('auth_token')?.value;
 
-  if (user) {
-    return {
-      status: "authenticated",
-      user: mapUser(user),
-    };
+  if (!token) {
+    return { status: "unauthenticated", user: null };
   }
 
-  return { status: "unauthenticated", user: null };
+  try {
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error('[loadCurrentUser] JWT_SECRET not configured');
+      return { status: "unauthenticated", user: null };
+    }
+
+    const decoded = jwt.verify(token, jwtSecret) as JWTPayload;
+
+    return {
+      status: "authenticated",
+      user: {
+        id: decoded.userId,
+        email: decoded.email,
+        appMetadata: {},
+        userMetadata: { nickname: decoded.nickname },
+      },
+    };
+  } catch (error) {
+    console.error('[loadCurrentUser] JWT verification failed:', error);
+    return { status: "unauthenticated", user: null };
+  }
 };

@@ -4,8 +4,11 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get('auth_token')?.value;
   const { pathname } = request.nextUrl;
 
+  console.log('[Middleware]', { pathname, hasToken: !!token, tokenLength: token?.length });
+
   // 로그인/회원가입 페이지에 이미 로그인된 상태로 접근 시
   if (token && (pathname === '/login' || pathname === '/register')) {
+    console.log('[Middleware] Logged in user accessing auth page, redirecting to /');
     return NextResponse.redirect(new URL('/', request.url));
   }
 
@@ -16,11 +19,15 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/mypage') ||
     pathname.startsWith('/dashboard');
 
+  console.log('[Middleware]', { isProtectedPath });
+
   if (!token && isProtectedPath) {
+    console.log('[Middleware] No token, redirecting to login');
     const redirectUrl = encodeURIComponent(pathname);
     return NextResponse.redirect(new URL(`/login?redirect=${redirectUrl}`, request.url));
   }
 
+  console.log('[Middleware] Allowing request');
   return NextResponse.next();
 }
 

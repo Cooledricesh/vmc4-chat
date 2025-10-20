@@ -16,7 +16,15 @@ export const errorBoundary = () =>
         .with(P.instanceOf(Error), (err) => err.message)
         .otherwise(() => 'Unexpected error');
 
-      logger?.error?.(error);
+      // 더 자세한 에러 로깅
+      logger?.error?.('=== ERROR BOUNDARY ===');
+      logger?.error?.('Path:', c.req.path);
+      logger?.error?.('Method:', c.req.method);
+      logger?.error?.('Error:', error);
+      if (error instanceof Error) {
+        logger?.error?.('Stack:', error.stack);
+      }
+      logger?.error?.('======================');
 
       return c.json(
         {
