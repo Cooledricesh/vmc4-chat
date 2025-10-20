@@ -1,23 +1,14 @@
-'use client';
+import { redirect } from 'next/navigation';
+import { loadCurrentUser } from '@/features/auth/server/load-current-user';
+import { MainPageClient } from '@/features/rooms/components/MainPageClient';
 
-import { MainHeader } from '@/features/rooms/components/MainHeader';
-import { RoomList } from '@/features/rooms/components/RoomList';
-import { CreateRoomButton } from '@/features/rooms/components/CreateRoomButton';
-import { useRooms } from '@/features/rooms/hooks/use-rooms';
+export default async function MainPage() {
+  const currentUser = await loadCurrentUser();
 
-export default function MainPage() {
-  const { data: rooms, isLoading } = useRooms();
+  // 비로그인 상태면 로그인 페이지로 리디렉션
+  if (currentUser.status !== 'authenticated') {
+    redirect('/login');
+  }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <MainHeader />
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">채팅방 목록</h1>
-          <CreateRoomButton />
-        </div>
-        <RoomList rooms={rooms} isLoading={isLoading} />
-      </main>
-    </div>
-  );
+  return <MainPageClient />;
 }

@@ -17,9 +17,10 @@ export function registerAuthRoutes(app: Hono<AppEnv>) {
     }
 
     // JWT 토큰을 HTTP-only 쿠키로 설정
+    const isProduction = process.env.NODE_ENV === 'production';
     const cookieOptions = [
       'HttpOnly',
-      'Secure',
+      ...(isProduction ? ['Secure'] : []),
       'SameSite=Strict',
       'Max-Age=86400',
       'Path=/',
@@ -43,7 +44,16 @@ export function registerAuthRoutes(app: Hono<AppEnv>) {
 
   auth.post('/logout', async (c) => {
     // 쿠키 삭제
-    c.header('Set-Cookie', 'auth_token=; HttpOnly; Secure; SameSite=Strict; Max-Age=0; Path=/');
+    const isProduction = process.env.NODE_ENV === 'production';
+    const cookieOptions = [
+      'HttpOnly',
+      ...(isProduction ? ['Secure'] : []),
+      'SameSite=Strict',
+      'Max-Age=0',
+      'Path=/',
+    ].join('; ');
+
+    c.header('Set-Cookie', `auth_token=; ${cookieOptions}`);
 
     return respond(c, success({ message: '로그아웃되었습니다' }));
   });
