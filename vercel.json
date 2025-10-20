@@ -1,12 +1,7 @@
 {
-  "version": 2,
-  "buildCommand": "npm run build",
-  "framework": "nextjs",
   "functions": {
     "app/api/**/*.ts": {
-      "maxDuration": 10,
-      "memory": 1024
+      "maxDuration": 10
     }
-  },
-  "regions": ["icn1"]
+  }
 }
